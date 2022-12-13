@@ -153,6 +153,7 @@ namespace Test
                 },
                 site_country = "US",
                 site_domain = "sift.com",
+                keyless_user_id = "keylessId",
                 brand_name = "sift"
             };
 
@@ -176,7 +177,7 @@ namespace Test
                          "\"$app_version\":\"1.0\",\"$client_language\":\"en-US\"},\"$brand_name\":\"sift\",\"$site_country\":\"US\",\"$site_domain\":\"sift.com\"," +
                          "\"$ordered_from\":{\"$store_id\":\"123\",\"$store_address\":{\"$name\":\"Bill Jones\",\"$address_1\":\"2100 Main Street\"," +
                          "\"$address_2\":\"Apt 3B\",\"$city\":\"New London\",\"$region\":\"New Hampshire\",\"$country\":\"US\",\"$zipcode\":\"03257\"," +
-                         "\"$phone\":\"1-415-555-6040\"}},\"foo\":\"bar\"}",
+                         "\"$phone\":\"1-415-555-6040\"}},\"$keyless_user_id\":\"keylessId\",\"foo\":\"bar\"}",
                          createOrder.ToJson());
 
 
@@ -191,10 +192,11 @@ namespace Test
             {
                 Event = createOrder,
                 AbuseTypes = { "legacy", "payment_abuse" },
-                ReturnScore = true
+                ReturnScore = true,
+                ReturnRouteInfo = true
             };
 
-            Assert.Equal("https://api.sift.com/v205/events?abuse_types=legacy,payment_abuse&return_score=true",
+            Assert.Equal("https://api.sift.com/v205/events?abuse_types=legacy,payment_abuse&return_score=true&return_route_info=true",
                          Uri.UnescapeDataString(eventRequest.Request.RequestUri.ToString()));
         }
 
@@ -566,13 +568,13 @@ namespace Test
 
             };
 
-            verificationCheckRequest.ApiKey = "35d603c1513f2567:";
+            verificationCheckRequest.ApiKey = "35d603c1513f2567";
+
+            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("35d603c1513f2567")),
+                verificationCheckRequest.Request.Headers.Authorization.Parameter);
 
             Assert.Equal("https://api.sift.com/v1.1/verification/check",
                          verificationCheckRequest.Request.RequestUri.ToString());
-
-            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("key")),
-                         verificationCheckRequest.Request.Headers.Authorization.Parameter);
         }
 
         [Fact]
@@ -599,13 +601,13 @@ namespace Test
                 }
             };
 
-            verificationSendRequest.ApiKey = "35d603c1513f2567:";
+            verificationSendRequest.ApiKey = "35d603c1513f2567";
+
+            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("35d603c1513f2567")),
+                verificationSendRequest.Request.Headers.Authorization.Parameter);
 
             Assert.Equal("https://api.sift.com/v1.1/verification/send",
                          verificationSendRequest.Request.RequestUri.ToString());
-
-            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("key")),
-                         verificationSendRequest.Request.Headers.Authorization.Parameter);
         }
 
         [Fact]
@@ -621,14 +623,16 @@ namespace Test
 
             };
 
-            verificationResendRequest.ApiKey = "35d603c1513f2567:";
+            verificationResendRequest.ApiKey = "35d603c1513f2567";
 
-            Assert.Equal("https://api.sift.com/v1.1/verification/send",
+            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("35d603c1513f2567")),
+                verificationResendRequest.Request.Headers.Authorization.Parameter);
+
+
+            Assert.Equal("https://api.sift.com/v1.1/verification/resend",
                          verificationResendRequest.Request.RequestUri.ToString());
-
-            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("key")),
-                         verificationResendRequest.Request.Headers.Authorization.Parameter);
         }
+
 
         [Fact]
         public void TestWebHookValidation()
@@ -671,9 +675,375 @@ namespace Test
                 "}";
 
             WebhookValidator webhook = new WebhookValidator();
-            Assert.True(webhook.IsValidWebhook(requestBody, secretKey, "InValid Key"));
+            Assert.False(webhook.IsValidWebhook(requestBody, secretKey, "InValid Key"));
 
 
+        }
+
+        [Fact]
+        public void TestGetMerchantsRequest()
+        {
+            var getMerchantRequest = new GetMerchantsRequest
+            {
+                AccountId = "5f053f004025ca08a187fad6"
+            };
+
+            getMerchantRequest.ApiKey = "09f7f361575d11ff";
+
+            Assert.Equal("https://api.sift.com/v3/accounts/5f053f004025ca08a187fad6/psp_management/merchants",
+                         getMerchantRequest.Request.RequestUri.ToString());
+
+        }
+
+        [Fact]
+        public void TestCreateMerchantRequest()
+        {
+            var createMerchantRequest = new CreateMerchantRequest
+            {
+                AccountId = "5f053f004025ca08a187fad6",
+                ApiKey = "09f7f361575d11ff",
+                Id = "test-vineeth-5",
+                Name = "Wonderful Payments Inc",
+                Description = "Wonderful Payments payment provider",
+                Address = new MerchantAddress
+                {
+                    Name = "Alany",
+                    Address1 = "Big Payment blvd, 22",
+                    Address2 = "apt, 8",
+                    City = "New Orleans",
+                    Country = "US",
+                    Phone = "0394888320",
+                    Region = "NA",
+                    ZipCode = "76830"
+
+                },
+                Category = "1002",
+                ServiceLevel = "Platinum",
+                Status = "active",
+                RiskProfile = new MerchantRiskProfile
+                {
+                    Level = "low",
+                    Score = 10
+                }
+            };
+
+            createMerchantRequest.ApiKey = "09f7f361575d11ff";
+
+            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("09f7f361575d11ff")),
+                createMerchantRequest.Request.Headers.Authorization.Parameter);
+
+
+            Assert.Equal("https://api.sift.com/v3/accounts/5f053f004025ca08a187fad6/psp_management/merchants",
+                         createMerchantRequest.Request.RequestUri.ToString());
+        }
+
+        [Fact]
+        public void TestUpdateMerchantRequest()
+        {
+            var updateMerchantRequest = new UpdateMerchantRequest
+            {
+                AccountId = "5f053f004025ca08a187fad6",
+                MerchantId = "test2",
+                ApiKey = "09f7f361575d11ff",
+                Id = "test-vineeth-5",
+                Name = "Wonderful Payments Inc",
+                Description = "Wonderful Payments payment provider",
+                Address = new MerchantAddress
+                {
+                    Name = "Alany",
+                    Address1 = "Big Payment blvd, 22",
+                    Address2 = "apt, 8",
+                    City = "New Orleans",
+                    Country = "US",
+                    Phone = "0394888320",
+                    Region = "NA",
+                    ZipCode = "76830"
+
+                },
+                Category = "1002",
+                ServiceLevel = "Platinum",
+                Status = "active",
+                RiskProfile = new MerchantRiskProfile
+                {
+                    Level = "low",
+                    Score = 10
+                }
+            };
+
+            updateMerchantRequest.ApiKey = "09f7f361575d11ff";
+
+            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("09f7f361575d11ff")),
+                updateMerchantRequest.Request.Headers.Authorization.Parameter);
+
+            Assert.Equal("https://api.sift.com/v3/accounts/5f053f004025ca08a187fad6/psp_management/merchants/test2",
+                         updateMerchantRequest.Request.RequestUri.ToString());
+
+
+            Assert.Equal("{\"id\":\"test-vineeth-5\"," +
+                "\"name\":\"Wonderful Payments Inc\"," +
+                "\"description\":\"Wonderful Payments payment provider\"," +
+                "\"address\":{\"name\":\"Alany\"," +
+                    "\"address_1\":\"Big Payment blvd, 22\"," +
+                    "\"address_2\":\"apt, 8\"," +
+                    "\"city\":\"New Orleans\"," +
+                    "\"region\":\"NA\"," +
+                    "\"country\":\"US\"," +
+                    "\"zipcode\":\"76830\"," +
+                    "\"phone\":\"0394888320\"}," +
+                "\"category\":\"1002\"," +
+                "\"service_level\":\"Platinum\"," +
+                "\"status\":\"active\"," +
+                "\"risk_profile\":{\"level\":\"low\",\"score\":10}}",
+                               Newtonsoft.Json.JsonConvert.SerializeObject(updateMerchantRequest));
+
+        }
+
+        [Fact]
+        public void TestGetMerchantDetailsRequest()
+        {
+            var getMerchantDetailRequest = new GetMerchantDetailsRequest
+            {
+                AccountId = "5f053f004025ca08a187fad6",
+                MerchantId = "test-merchat-id",
+            };
+
+            getMerchantDetailRequest.ApiKey = "09f7f361575d11ff";
+
+            Assert.Equal(Convert.ToBase64String(Encoding.Default.GetBytes("09f7f361575d11ff")),
+                getMerchantDetailRequest.Request.Headers.Authorization.Parameter);
+
+            Assert.Equal("https://api.sift.com/v3/accounts/5f053f004025ca08a187fad6/psp_management/merchants/test-merchat-id",
+             getMerchantDetailRequest.Request.RequestUri.ToString());
+        }
+
+        [Fact]
+        public void TestChargebackEvent()
+        {
+            var chargeback = new Chargeback
+            {
+                user_id = "test_dotnet_chargeback_event",
+                session_id = "gigtleqddo84l8cm15qe4il",
+                transaction_id = "719637215",
+                order_id = "ORDER-123124124",
+                chargeback_state = "$lost",
+                chargeback_reason = "$duplicate",
+
+                merchant_profile = new MerchantProfile
+                {
+                    merchant_id = "123",
+                    merchant_category_code = "9876",
+                    merchant_name = "ABC Merchant",
+                    merchant_address = new Address
+                    {
+                        name = "Bill Jones",
+                        phone = "1-415-555-6040",
+                        address_1 = "2100 Main Street",
+                        address_2 = "Apt 3B",
+                        city = "New London",
+                        region = "New Hampshire",
+                        country = "US",
+                        zipcode = "03257"
+                    }
+                }
+            };
+
+            // Augment with custom fields
+            chargeback.AddField("foo", "bar");
+            Assert.Equal("{\"$type\":\"$chargeback\",\"$user_id\":\"test_dotnet_chargeback_event\",\"$session_id\":\"gigtleqddo84l8cm15qe4il\"," +
+                                 "\"$order_id\":\"ORDER-123124124\",\"$transaction_id\":\"719637215\",\"$chargeback_state\":\"$lost\",\"$chargeback_reason\":\"$duplicate\"," +
+                                 "\"$merchant_profile\":{\"$merchant_id\":\"123\",\"$merchant_category_code\":\"9876\",\"$merchant_name\":\"ABC Merchant\",\"$merchant_address\":" +
+                                 "{\"$name\":\"Bill Jones\",\"$address_1\":\"2100 Main Street\",\"$address_2\":\"Apt 3B\",\"$city\":\"New London\",\"$region\":\"New Hampshire\"," +
+                                 "\"$country\":\"US\",\"$zipcode\":\"03257\",\"$phone\":\"1-415-555-6040\"}},\"foo\":\"bar\"}",
+                                 chargeback.ToJson());
+
+            EventRequest eventRequest = new EventRequest
+            {
+                Event = chargeback
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events", eventRequest.Request.RequestUri.ToString());
+
+            eventRequest = new EventRequest
+            {
+                Event = chargeback,
+                AbuseTypes = { "legacy", "payment_abuse" },
+                ReturnScore = true
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events?abuse_types=legacy,payment_abuse&return_score=true",
+                          Uri.UnescapeDataString(eventRequest.Request.RequestUri.ToString()));
+        }
+
+        [Fact]
+        public void TestCreateAccountEvent()
+        {
+            var createAccount = new CreateAccount
+            {
+                user_id = "test_dotnet_create_account_event",
+                session_id = "gigtleqddo84l8cm15qe4il",
+                user_email = "bill@gmail.com",
+                name = "Bill Jones",
+                referrer_user_id = "janejane101",
+                social_sign_on_type = "$twitter",
+                merchant_profile = new MerchantProfile
+                {
+                    merchant_id = "123",
+                    merchant_category_code = "9876",
+                    merchant_name = "ABC Merchant",
+                    merchant_address = new Address
+                    {
+                        name = "Bill Jones",
+                        phone = "1-415-555-6040",
+                        address_1 = "2100 Main Street",
+                        address_2 = "Apt 3B",
+                        city = "New London",
+                        region = "New Hampshire",
+                        country = "US",
+                        zipcode = "03257"
+                    }
+                },
+                account_types = new ObservableCollection<string>() { "merchant", "premium" }
+            };
+
+            // Augment with custom fields
+            createAccount.AddField("foo", "bar");
+
+            Assert.Equal("{\"$type\":\"$create_account\",\"$user_id\":\"test_dotnet_create_account_event\",\"$session_id\":\"gigtleqddo84l8cm15qe4il\"," +
+                                 "\"$user_email\":\"bill@gmail.com\",\"$name\":\"Bill Jones\",\"$referrer_user_id\":\"janejane101\",\"$social_sign_on_type\":" +
+                                 "\"$twitter\",\"$merchant_profile\":{\"$merchant_id\":\"123\",\"$merchant_category_code\":\"9876\",\"$merchant_name\":\"ABC Merchant\"," +
+                                 "\"$merchant_address\":{\"$name\":\"Bill Jones\",\"$address_1\":\"2100 Main Street\",\"$address_2\":\"Apt 3B\",\"$city\":\"New London\"," +
+                                 "\"$region\":\"New Hampshire\",\"$country\":\"US\",\"$zipcode\":\"03257\",\"$phone\":\"1-415-555-6040\"}},\"$account_types\":" +
+                                 "[\"merchant\",\"premium\"],\"foo\":\"bar\"}",
+                                 createAccount.ToJson());
+
+            EventRequest eventRequest = new EventRequest
+            {
+                Event = createAccount
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events", eventRequest.Request.RequestUri.ToString());
+
+            eventRequest = new EventRequest
+            {
+                Event = createAccount,
+                AbuseTypes = { "legacy", "payment_abuse" },
+                ReturnScore = true
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events?abuse_types=legacy,payment_abuse&return_score=true",
+                          Uri.UnescapeDataString(eventRequest.Request.RequestUri.ToString()));
+        }
+
+        [Fact]
+        public void TestUpdateAccountEvent()
+        {
+            var updateAccount = new UpdateAccount
+            {
+                user_id = "test_dotnet_update_account_event",
+                session_id = "gigtleqddo84l8cm15qe4il",
+                user_email = "bill@gmail.com",
+                name = "Bill Jones",
+                referrer_user_id = "janejane101",
+                social_sign_on_type = "$twitter",
+                merchant_profile = new MerchantProfile
+                {
+                    merchant_id = "123",
+                    merchant_category_code = "9876",
+                    merchant_name = "ABC Merchant",
+                    merchant_address = new Address
+                    {
+                        name = "Bill Jones",
+                        phone = "1-415-555-6040",
+                        address_1 = "2100 Main Street",
+                        address_2 = "Apt 3B",
+                        city = "New London",
+                        region = "New Hampshire",
+                        country = "US",
+                        zipcode = "03257"
+                    }
+                },
+                account_types = new ObservableCollection<string>() { "merchant", "premium" }
+            };
+
+            // Augment with custom fields
+            updateAccount.AddField("foo", "bar");
+
+            Assert.Equal("{\"$type\":\"$update_account\",\"$user_id\":\"test_dotnet_update_account_event\",\"$session_id\":\"gigtleqddo84l8cm15qe4il\"," +
+                                 "\"$user_email\":\"bill@gmail.com\",\"$name\":\"Bill Jones\",\"$referrer_user_id\":\"janejane101\",\"$social_sign_on_type\":" +
+                                 "\"$twitter\",\"$merchant_profile\":{\"$merchant_id\":\"123\",\"$merchant_category_code\":\"9876\",\"$merchant_name\":\"ABC Merchant\"," +
+                                 "\"$merchant_address\":{\"$name\":\"Bill Jones\",\"$address_1\":\"2100 Main Street\",\"$address_2\":\"Apt 3B\",\"$city\":" +
+                                 "\"New London\",\"$region\":\"New Hampshire\",\"$country\":\"US\",\"$zipcode\":\"03257\",\"$phone\":\"1-415-555-6040\"}}," +
+                                 "\"$account_types\":[\"merchant\",\"premium\"],\"foo\":\"bar\"}",
+                                 updateAccount.ToJson());
+
+            EventRequest eventRequest = new EventRequest
+            {
+                Event = updateAccount
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events", eventRequest.Request.RequestUri.ToString());
+
+            eventRequest = new EventRequest
+            {
+                Event = updateAccount,
+                AbuseTypes = { "legacy", "payment_abuse" },
+                ReturnScore = true
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events?abuse_types=legacy,payment_abuse&return_score=true",
+                          Uri.UnescapeDataString(eventRequest.Request.RequestUri.ToString()));
+        }
+
+        [Fact]
+        public void TestLoginEvent()
+        {
+            var login = new Login
+            {
+                user_id = "test_dotnet_login_event",
+                session_id = "gigtleqddo84l8cm15qe4il",
+                user_email = "bill@gmail.com",
+                login_status = "$success",
+                ip = "128.148.1.135",
+                failure_reason = "$account_unknown",
+                social_sign_on_type = "$facebook",
+                username = "test_user_name",
+                site_country = "US",
+                site_domain = "sift.com",
+                keyless_user_id = "keylessId",
+                brand_name = "sift",
+                browser = new Browser
+                {
+                    user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36",
+                    accept_language = "en-US",
+                    content_language = "en-GB"
+                },
+                account_types = new ObservableCollection<string>() { "merchant", "premium" }
+            };
+
+            Assert.Equal("{\"$type\":\"$login\",\"$user_id\":\"test_dotnet_login_event\",\"$session_id\":\"gigtleqddo84l8cm15qe4il\"," +
+                                 "\"$user_email\":\"bill@gmail.com\",\"$login_status\":\"$success\",\"$failure_reason\":\"$account_unknown\"," +
+                                 "\"$social_sign_on_type\":\"$facebook\",\"$username\":\"test_user_name\",\"$ip\":\"128.148.1.135\",\"$browser\":" +
+                                 "{\"$user_agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) " +
+                                 "Chrome/56.0.2924.87 Safari/537.36\",\"$accept_language\":\"en-US\",\"$content_language\":\"en-GB\"},\"$brand_name\":" +
+                                 "\"sift\",\"$site_country\":\"US\",\"$site_domain\":\"sift.com\",\"$account_types\":[\"merchant\",\"premium\"],"+ "\"$keyless_user_id\":\"keylessId\"" +"}",
+                                 login.ToJson());
+
+            EventRequest eventRequest = new EventRequest
+            {
+                Event = login
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events", eventRequest.Request.RequestUri.ToString());
+
+            eventRequest = new EventRequest
+            {
+                Event = login,
+                AbuseTypes = { "legacy", "payment_abuse" },
+                ReturnScore = true
+            };
+
+            Assert.Equal("https://api.sift.com/v205/events?abuse_types=legacy,payment_abuse&return_score=true",
+                          Uri.UnescapeDataString(eventRequest.Request.RequestUri.ToString()));
         }
     }
 }
