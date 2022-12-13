@@ -97,7 +97,7 @@ namespace Sift
 
             request.Headers.UserAgent.ParseAdd(UserAgent);
 
-            HttpResponseMessage responseMessage = await http.SendAsync(request);
+            HttpResponseMessage responseMessage = await http.SendAsync(request).ConfigureAwait(false);
 
             return (T)ProcessResponse(
                 JsonConvert.DeserializeObject<T>(await responseMessage.Content.ReadAsStringAsync()),
